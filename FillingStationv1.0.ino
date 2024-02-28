@@ -7,33 +7,78 @@ This code controls the ERV and the pump
 #include "HX711.h"
 #include "Ethernet5500.h"
 #include <avr/pgmspace.h>
+//#include <TimerInterrupt.h>
 // Note: You also have to connect GND, 5V/VIO and VM.
 //       A connection diagram can be found in the schematics.
+
+#define DEBUG 1
+#if DEBUG
+#define PRINT(str) Serial.print(str);
+#define PRINTLN(str) Serial.println(str);
+#else if
+#define PRINT(str)
+#endif
+
 #define MICROSTEPS  8 //8 microsteps by full steps
-#define MICROSTEPS_PUMP 4
-#define EN_PIN_ERV  7
-#define EN_PIN_PUMP 6
+#define MICROSTEPS_PUMP 8
 
-#define HOME_PIN  9
-#define PORT_PIN  8
+#define HOME_PIN  30
+#define PORT_PIN  31
 
-#define STEP_PIN 5
-#define DIR_PIN 4
+#define DIR_PUMP   22
+#define STEP_PUMP    23
+#define EN_PUMP     24
+
+#define DIR_ERV    26
+#define STEP_ERV     27
+#define EN_ERV      28
+
+
+#define MAXFLOW 5000
+#define MAXDISPENSE 100
+
+//Valve used port
+#define AIRPORT   1
+#define H2OPORT   6
+#define ETHPORT   7
+#define MEDIAPORT1 2
+#define MEDIAPORT2 3
+
+float primeVolMedia1 = 10; //mL - This volume is the volume between the pouch and the pump
+float primeVolMedia2 = 10; //mL
+float primeVolH2O = 10; //mL
+float primeVolEth = 10; //mL
 
 double flow = 1; //ml/s
-double deadVolume = 0;
-ERV ElectricRotaryValve(HOME_PIN,PORT_PIN,EN_PIN_ERV,DIR_PIN,STEP_PIN,MICROSTEPS);
-KamoerPump KamoerPump(EN_PIN_PUMP, DIR_PIN, STEP_PIN, MICROSTEPS_PUMP, flow, deadVolume);
+double deadVolume = 10; //mL - This volume is the one used to flush/clean the tubings, corresponds to the volume between the pump and the dispenser
+double deadVolumePouch = 100;//mL - This volume is the one that cannot be retrieved from the bags
+ERV ElectricRotaryValve(HOME_PIN,PORT_PIN,EN_ERV,DIR_ERV,STEP_ERV,MICROSTEPS);
+KamoerPump KamoerPump(EN_PUMP, DIR_PUMP, STEP_PUMP, MICROSTEPS_PUMP, flow, deadVolume);
 
-#define DOUT  3
-#define CLK  2
+#define SCALE1_DOUT  38
+#define SCALE1_CLK  39
+#define SCALE2_DOUT  40
+#define SCALE2_CLK    41
+HX711 scale1;//Scale on the Left
+HX711 scale2;//Scale on the right
 
-HX711 scale;
-
-float calibration_factor = -420; //-7050 worked for my 440lb max scale setup
+long calibration_factor1 = -430;
+long calibration_factor2 = -420; 
 //take a long time to get a resting value -> due to swinging of the basket ?
-long zero = -143564;
+long zero1 = -163450;
+long zero2 = -143564;
 
+bool scaleInit1 = false;
+bool scaleActive1 = false;
+int scaleState1 = 0;
+double scaleWeight1 = 0;
+
+bool scaleInit2 = false;
+bool scaleActive2 = false;
+int scaleState2 = 0;
+double scaleWeight2 = 0;
+
+double scaleDeadWeight = 50; //To be properly measured
 //Ethernet Variables
 //Ethernet related settings
 byte mac[] = {0x2C, 0xF7, 0xF1, 0x08, 0x39, 0x46};  //W5500 Mac address
@@ -52,97 +97,100 @@ String dataString = "";
 String inputString = "";
 
 long timeAlive;
-int valveState = 1;
+bool valveInit = false;
+bool valveBusy = false;
+int valveState = 0;
 int valvePort = 0;
 
-int pumpState = 1;
-long pumpFlow = 100;
+bool pumpInit = false;
+bool pumpBusy = false;
+int pumpState = 0;
+float pumpFlow = 1000;
 
-int scaleState1 = 0;
-double scaleWeight1 = 0;
-long scaleCalibration1 = 0;
+int fillStationState = 0;
 
-int scaleState2 = 0;
-double scaleWeight2 = 0;
-long scaleCalibration2 = 0;
+int rinseStationState = 0;
+bool rinseBusy = false;
+bool rinse1Busy = false;
+bool rinse2Busy = false;
+bool rinseAirBusy = false;
+bool rinseUVCBusy = false;
+bool rinseInit = false;
+long timeRinseStart1 = 0;
+long timeRinseStart2 = 0;
+long timeRinseAir = 0;
+long timeUVCLed = 0;
+float dispenseAirTime = 10000;
+float dispenseClean1Time = 10000;
+float dispenseClean2Time = 10000;
+float UVCLedONTime = 10000;
+float flowClean1 = 1000; //mL/ms
+float flowClean2 = 1000; //mL/ms
+
+bool UVCOn = false;
+bool toggleLed = true;
+#define RINSE_PUMP1 6
+#define RINSE_PUMP2 7
+#define RINSE_AIRVALVE 8
+#define TIMEPUMP 5000 //ms
+#define TIMEAIR 5000 //ms
+
+#define LED_UVC   9
 void setup()
 {
   //set pins
-  pinMode(EN_PIN_ERV, OUTPUT);
-  digitalWrite(EN_PIN_ERV, LOW); //deactivate driver
-  pinMode(EN_PIN_PUMP, OUTPUT);
-  digitalWrite(EN_PIN_PUMP, LOW); //deactivate driver
+  pinMode(EN_ERV, OUTPUT);
+  digitalWrite(EN_ERV, LOW); //deactivate driver
+  pinMode(EN_PUMP, OUTPUT);
+  digitalWrite(EN_PUMP, LOW); //deactivate driver
 
   pinMode(HOME_PIN,INPUT);
   pinMode(PORT_PIN,INPUT);
-  pinMode(STEP_PIN,OUTPUT);
-  digitalWrite(STEP_PIN,LOW);
-  pinMode(DIR_PIN,OUTPUT);
-  digitalWrite(DIR_PIN,HIGH);
+  pinMode(STEP_ERV,OUTPUT);
+  digitalWrite(STEP_ERV,LOW);
+  pinMode(DIR_ERV,OUTPUT);
+  digitalWrite(DIR_ERV,HIGH);
 
+  pinMode(STEP_PUMP,OUTPUT);
+  digitalWrite(STEP_PUMP,LOW);
+  pinMode(DIR_PUMP,OUTPUT);
+  digitalWrite(DIR_PUMP,HIGH);
   
   //init serial port
   Serial.begin(115200); //init serial port and set baudrate
-  while(!Serial); //wait for serial port to connect (needed for Leonardo only)
-  Serial.println("\nStart...");
-  //init softSPI
-  Serial.println("Init ERV");
-  if(!ElectricRotaryValve.init_ERV())
-    Serial.println(F("ERV initialization failed"));
-  Serial.println("Home pin = " +String(digitalRead(HOME_PIN)));
-  
-  Serial.println("Init pump");
-  if(!KamoerPump.init_Pump()){
-    Serial.println("Pump init failed");
-  }
-  Serial.println("Setup Done");
-  //Init the Load Cell
-  scale.begin(DOUT, CLK);
-  scale.set_scale();
-  scale.set_offset(zero);
-  //init Ehternet server
-  inputString.reserve(200);
+  //while(!Serial); //wait for serial port to connect (needed for Leonardo only)
+  PRINTLN("\nStart...");
+  initializeFillingStation();
 
-  if(!initEthernet()) Serial.println("Error on Ethernet");
+  //init Ehternet server
+  inputString.reserve(50);
+
+  if(!initEthernet()) PRINTLN("Error on Ethernet");
+  PRINTLN("Setup Done");
 }
 void loop()
 {
-  uint8_t value;
-  scale.set_scale(calibration_factor); //Adjust to this calibration factor
-  /*
-  Serial.print("Reading: ");
-  Serial.print(scale.get_units(5), 1);
-  Serial.print(" g"); //Change this to kg and re-adjust the calibration factor if you follow SI units like a sane person
-  Serial.print(" ADC value: ");Serial.print(scale.get_value(10));
-  Serial.print(" calibration_factor: ");
-  Serial.print(calibration_factor);
-  Serial.println();
-  */
-  if(Serial.available()){
-    value = Serial.parseInt();
-    if(value > 0 && value <9){
-    Serial.print("You typed: " );
-    Serial.println(value);
-    if(!ElectricRotaryValve.openPort(value))
-      Serial.println("Go to port failed");
+  //Get current status of the filling station
+  getFillingStationState();
+
+  //Automatically disable the rinse station functions after their enable time is passed
+  if(rinseBusy){
+    long nowTime = millis();
+    if(rinse1Busy && (nowTime-timeRinseStart1) > dispenseClean1Time){
+      rinse1OFF();
     }
-    if(value == 10){
-      Serial.println("Will init ERV");
-      if(!ElectricRotaryValve.init_ERV()){
-        Serial.println("Init failed");
-      }
-      else{
-        Serial.println("Init Success");
-      }
+    if(rinse2Busy && (nowTime-timeRinseStart2) > dispenseClean2Time){
+      rinse2OFF();
     }
-    if(value > 100){
-      double volume = value-100;
-      Serial.println("Will dispense " + String( volume) + " mL");
-      KamoerPump.DispenseVolume(volume);
+    if(rinseAirBusy && (nowTime-timeRinseAir) > dispenseAirTime){
+      rinseAirOFF();
+    }
+    if(rinseUVCBusy && (nowTime-timeUVCLed) > UVCLedONTime){
+      disableUVCLed();
     }
   }
-
-  //Ethernet Client check
+  //Ethernet client Check
+  long time_start = millis();
   EthernetClient client = server.available();
   EthernetClient *client_pntr = &client;
   if(client){
@@ -153,20 +201,172 @@ void loop()
         currentLine = ""; //reset currentLine
         //Read the first Line
         char c = client.read();
-        while(!(c== '\n' || c == ' ' || c == '/' || c == -1)){
+        //while(!(c== '\n' || c == ' ' || c == '/' || c == -1)){
+        while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
           currentLine += c;
           c = client.read();
         }
-        if(currentLine == "home"){homePage(client_pntr);}
-        if(currentLine == "updateStartPage"){Serial.println(F("updateHomePage"));updateHomePage(client_pntr);}
-        
-        if(currentLine == "resetController"){software_reset();}
+        if(currentLine=="home"){homePage(client_pntr);}
+        if(currentLine=="getStatus"){getStatus(client_pntr);}
+        if(currentLine=="updateStartPage"){PRINTLN("updateHomePage");updateHomePage(client_pntr);}
+        //High level commands
+        if(currentLine=="initializeFillStation") {PRINTLN("initializeFillStation");answerHTTP(client_pntr);initializeFillingStation();}
+        if(currentLine=="primeLinesFillStation") {PRINTLN("primeLinesFillStation");answerHTTP(client_pntr);primeLinesFillingStation();}
+        if(currentLine=="dispenseMediaVol") {
+          PRINTLN("dispenseMediaVol");
+          currentLine = "";
+          c= client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          float mediaVol = currentLine.toFloat();
+          PRINTLN(mediaVol);
+          answerHTTP(client_pntr);
+          dispenseMediaVol(mediaVol);
+        }
+        if(currentLine=="cleanFillStation") {PRINTLN("cleanFillStation");answerHTTP(client_pntr);cleanFillingStation();}
+        if(currentLine=="flushFillStation"){ PRINTLN("flushFillStation");answerHTTP(client_pntr);flushFillingStation();}
+        if(currentLine=="rinseTip"){PRINTLN("RinseTip");answerHTTP(client_pntr);rinseTip();}
+        //Low level manual commands
+        if(currentLine=="initializeValve") {PRINTLN("initializeValve");answerHTTP(client_pntr);initializeValve();}
+        if(currentLine=="goToPort") {
+          PRINTLN("goToPort");
+          currentLine = "";
+          c= client.read();
+          int portNumber = c -48;
+          PRINTLN(portNumber);
+          answerHTTP(client_pntr);
+          goToPort(portNumber);
+        }
+        if(currentLine=="initializePump") {PRINTLN("initializePump");answerHTTP(client_pntr);initializePump();}
+        if(currentLine=="setFlow") {
+          PRINTLN("setFlow");
+          currentLine = "";
+          c= client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          float flowRate = currentLine.toFloat();
+          PRINTLN(flowRate);
+          answerHTTP(client_pntr);
+          setFlowRate(flowRate);
+        }
+        if(currentLine=="dispenseVol") {
+          PRINTLN("dispenseVol");
+          currentLine = "";
+          c= client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          float dispenseVol = currentLine.toFloat();
+          PRINTLN(dispenseVol);
+          answerHTTP(client_pntr);
+          dispenseVolume(dispenseVol);
+        }
+        if(currentLine=="initializeScale1") {PRINTLN("initializeScale1");answerHTTP(client_pntr);initializeScale1();}
+        if(currentLine=="selectScale1") {PRINTLN("selectScale1");answerHTTP(client_pntr);selectScale1();}
+        if(currentLine=="tareScale1") {PRINTLN("tareScale1");answerHTTP(client_pntr);tareScale1();}
+        if(currentLine=="setCalibration1") {
+          PRINTLN("setCalibration1");
+          currentLine = "";
+          c= client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          calibration_factor1 = currentLine.toInt();
+          PRINTLN(calibration_factor1);
+          setCalibration1();
+          answerHTTP(client_pntr);
+          
+        }
+        if(currentLine=="initializeScale2") {PRINTLN(F("initializeScale2"));answerHTTP(client_pntr);initializeScale2();}
+        if(currentLine=="selectScale2") {PRINTLN("selectScale2");answerHTTP(client_pntr);selectScale2();}
+        if(currentLine=="tareScale2") {PRINTLN(F("tareScale2"));answerHTTP(client_pntr);tareScale2();}
+        if(currentLine=="setCalibration2") {
+          PRINTLN("setCalibration2");
+          currentLine = "";
+          c= client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          calibration_factor2 = currentLine.toInt();
+          PRINTLN(calibration_factor2);
+          setCalibration2();
+          answerHTTP(client_pntr);
+        }
+        if(currentLine =="selectScale0"){
+          PRINTLN("selectScale0");
+          answerHTTP(client_pntr);
+          if(!selectScaleAuto()){
+            PRINTLN("ERROR selecting scale");
+            }
+        }
+        //Rinse STATION
+        if(currentLine=="dispenseAir") {
+          PRINTLN("dispenseAir");
+          currentLine = "";
+          c= client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          dispenseAirTime = currentLine.toFloat()*1000; //from s to ms
+          PRINTLN(dispenseAirTime);
+          dispenseAir();
+          answerHTTP(client_pntr);
+        }
+        if(currentLine=="dispenseClean1") {
+          PRINTLN("dispenseClean1");
+          currentLine = "";
+          c= client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          float dispenseVol = currentLine.toFloat();
+          PRINTLN(dispenseVol);
+          dispenseClean1(dispenseVol);
+          answerHTTP(client_pntr);
+        }
+        if(currentLine=="dispenseClean2") {
+          PRINTLN("dispenseClean2");
+          currentLine = "";
+          c= client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          float dispenseVol = currentLine.toFloat();
+          PRINTLN(dispenseVol);
+          dispenseClean2(dispenseVol);
+          answerHTTP(client_pntr);
+        }
+        if(currentLine=="enableUVC") {
+          PRINTLN("enableUVC");
+          currentLine = "";
+          c=client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          UVCLedONTime = currentLine.toFloat()*1000; //convert from s to ms
+          PRINTLN(UVCLedONTime);
+          enableUVCLed();
+          answerHTTP(client_pntr);
+        }
+        if(currentLine=="resetController"){answerHTTP(client_pntr); software_reset();}
       }
       //Serial.println("client connected");
       if(millis()-time_connection> TIMEOUT_ETH)
         client.stop();
       delay(20);
     }
+    Serial.println("Took "+String(millis()-time_start)+" ms to poll eth");
   }
 
 }
@@ -175,16 +375,15 @@ void loop()
 void software_reset() {
   asm volatile (" jmp 0");  
 }
-
 //Init Ethernet Server
 bool initEthernet(){
-  Serial.println(F("Ethernet Coms starting..."));
+  PRINTLN(F("Ethernet Coms starting..."));
   Ethernet.begin(mac, ip, myDns, gateway, subnet);  //Start the Ethernet coms
   // Check for Ethernet hardware present
   // Start the server
   server.begin();           //"server" is the name of the object for comunication through ethernet
-  Serial.print(F("Ethernet server connected. Server is at "));
+  PRINT(F("Ethernet server connected. Server is at "));
   //Serial.println(Ethernet.localIP());         //Gives the local IP through serial com
-  Serial.println(strIP);
+  PRINTLN(strIP);
   return true;
 }

@@ -1,19 +1,60 @@
-
-/*
-//Dispense mL mL of liquid
-void dispense(double ml){
-//1 full turn dispense about 125 uL 
-//there is 8 rollers so the precision of the pump is of about 15 uL
-//1 full turn is made of 200*256 = 51200 impulses
-  double volPerRev = 0.135;
-  double Rev = ml/volPerRev;
-  Serial.println(Rev);
-  double stepPerRev = 51200;
-  uint32_t stepToDo = Rev*stepPerRev;
-  uint32_t Xactual = readReg(0x21);
-  Xactual = readReg(0x21);
-  uint32_t Xtarget = Xactual + stepToDo;
-  Serial.print("To dispense ");Serial.print(ml);Serial.print(" mL of water, ");Serial.print(stepToDo);Serial.println(" steps must be made");
-  writeReg(0x37,Xtarget);
+void initializePump(){
+  if(!KamoerPump.init_Pump()){
+    PRINTLN("Pump init failed");
+    pumpInit = false;
+    pumpBusy = false;
+  }
+  else{
+    PRINTLN("Pump initialized");
+    pumpInit = true;
+    pumpBusy = false;
+  }
+  getPumpState();
 }
-*/
+
+void setFlowRate(float flowRate){
+  if(pumpInit && !pumpBusy)
+  {
+    if(flowRate > 0 && flowRate <= MAXFLOW){
+      double flowML = flowRate/1000;
+      PRINT("Set pump flow rate to : ");PRINT(flowML);PRINTLN(" mL/s");
+      KamoerPump.setFlow(flowML);
+      pumpFlow = flowRate;
+    }
+    else{
+      PRINTLN("Flow rate outside of boundaries, 0-"+ String(MAXFLOW));
+    }
+  }
+  else{
+    PRINTLN("Init pump before setting the flow rate and wait for it to be idle");
+  }
+}
+
+void dispenseVolume(float dispenseVol){
+  if(pumpInit && !pumpBusy){
+    if(dispenseVol >0 && dispenseVol<=MAXDISPENSE){
+      PRINTLN("The pump will dispense " + String(dispenseVol) + " mL");
+      pumpBusy = true;
+      KamoerPump.DispenseVolume(dispenseVol);
+      pumpBusy = false;
+    }
+    else{
+      PRINTLN("Dispense volume outside of boundaries, 0-" + String(MAXDISPENSE));
+    }
+  }
+  else{
+    PRINTLN("Init pump before sending dispense command and wait for it to be idle");
+  }
+}
+
+void getPumpState(){
+  if(pumpInit){
+    if(pumpBusy){
+      pumpState = 2;
+    }
+    else
+      pumpState = 1;
+  }
+  else
+    pumpState = 0;
+}

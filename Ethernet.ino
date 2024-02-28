@@ -1,5 +1,3 @@
-
-const char test[] PROGMEM = R"====(Hello World)====";
 void homePage(EthernetClient* client_pntr){
   client_pntr->print(Header);
   char buffer_loc[500];
@@ -12,15 +10,9 @@ void homePage(EthernetClient* client_pntr){
     if(k >= 500){
       client_pntr->write(buffer_loc,k);
       k= 0;
-      //delay(100);
-      //Serial.write(buffer_loc,k);
     }
   }
   client_pntr->write(buffer_loc,k);
-  //Serial.write(buffer_loc,k);
-  //strlcpy_P(buffer_loc,(char *)pgm_read_ptr(&(headerOK)),50);
-  //client_pntr->print(buffer_str);
-  //client_pntr->print(buffer_str);
   
   while (client_pntr->read() != -1);
   client_pntr->stop();
@@ -47,21 +39,70 @@ void updateHomePage(EthernetClient* client_pntr){
   updateValues += "\r|";
   updateValues += String(scaleWeight1);
   updateValues += "\r|";
-  updateValues += String(scaleCalibration1);
+  updateValues += String(calibration_factor1);
   updateValues += "\r|";
 
-  updateValues += String(scaleState1);
+  updateValues += String(scaleState2);
   updateValues += "\r|";
   updateValues += String(scaleWeight2);
   updateValues += "\r|";
-  updateValues += String(scaleCalibration2);
+  updateValues += String(calibration_factor2);
   updateValues += "\r|";
 
+  updateValues += String(fillStationState);
+  updateValues += "\r|";
+
+  updateValues += String(rinseStationState);
+  updateValues += "\r|";
   client_pntr->print( Header );
   client_pntr->print(updateValues);
   //client_pntr->print( tagPresent[0] );   client_pntr->print( "|" );  client_pntr->print( tagPresent[1] );   client_pntr->print( "|" );  client_pntr->print( tagPresent[2] ); 
-  Serial.println(F("Update values sent"));
+  Serial.print(F("Update values sent : "));Serial.println(updateValues);
   while (client_pntr->read() != -1);
   client_pntr->stop();
   
+}
+
+void answerHTTP(EthernetClient* client_pntr) {
+  client_pntr->print( Header );
+  while (client_pntr->read() != -1);
+  client_pntr->stop();
+}
+void getStatus(EthernetClient* client_pntr) {
+  client_pntr->print( Header );
+  client_pntr->print("Filling Station current status="+String(fillStationState));
+  while (client_pntr->read() != -1);
+  client_pntr->stop();
+}
+
+/*
+ * Call this function to quickly connect to a client sends him a getStatus update
+ */
+void updateEthernetClient(){
+  long time_start = millis();
+  EthernetClient client = server.available();
+  EthernetClient *client_pntr = &client;
+  if(client){
+    String currentLine = "";
+    long time_connection = millis();
+    while(client.connected()){
+      if(client.available()) {
+        currentLine = ""; //reset currentLine
+        //Read the first Line
+        char c = client.read();
+        //while(!(c== '\n' || c == ' ' || c == '/' || c == -1)){
+        while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+        }
+        if(currentLine=="home"){homePage(client_pntr);}
+        if(currentLine=="getStatus"){getStatus(client_pntr);}
+        if(currentLine=="updateStartPage"){PRINTLN("updateHomePage");updateHomePage(client_pntr);}
+      }
+      //Serial.println("client connected");
+      if(millis()-time_connection> TIMEOUT_ETH)
+        client.stop();
+    }
+    Serial.println("Took "+String(millis()-time_start)+" ms to poll eth");
+  }
 }
