@@ -54,7 +54,7 @@ double deadVolume = 10; //mL - This volume is the one used to flush/clean the tu
 double deadVolumePouch = 100;//mL - This volume is the one that cannot be retrieved from the bags
 ERV ElectricRotaryValve(HOME_PIN,PORT_PIN,EN_ERV,DIR_ERV,STEP_ERV,MICROSTEPS);
 KamoerPump KamoerPump(EN_PUMP, DIR_PUMP, STEP_PUMP, MICROSTEPS_PUMP, flow, deadVolume);
-
+double volumeMultiplier = 1.0; //This parameter can be changed directly on the UI allowing the User to easily adjust the amount of volume delivered
 #define SCALE1_DOUT  38
 #define SCALE1_CLK  39
 #define SCALE2_DOUT  40
@@ -357,6 +357,18 @@ void loop()
           UVCLedONTime = currentLine.toFloat()*1000; //convert from s to ms
           PRINTLN(UVCLedONTime);
           enableUVCLed();
+          answerHTTP(client_pntr);
+        }
+        if(currentLine =="setVolumeMultiplier") {
+          PRINTLN("setVolumeMultiplier");
+          currentLine = "";
+          c=client.read();
+          while(!(c== '\n' || c == ' '|| c == '/' || c == -1)){
+          currentLine += c;
+          c = client.read();
+          }
+          volumeMultiplier = currentLine.toFloat();
+          PRINTLN(volumeMultiplier);
           answerHTTP(client_pntr);
         }
         if(currentLine=="resetController"){answerHTTP(client_pntr); software_reset();}

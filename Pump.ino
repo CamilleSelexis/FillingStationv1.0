@@ -31,6 +31,7 @@ void setFlowRate(float flowRate){
 }
 
 void dispenseVolume(float dispenseVol){
+  dispenseVol = dispenseVol*volumeMultiplier;
   if(pumpInit && !pumpBusy){
     if(dispenseVol >0 && dispenseVol<=MAXDISPENSE){
       PRINTLN("The pump will dispense " + String(dispenseVol) + " mL");

@@ -45,7 +45,7 @@ const char homePageStr[] PROGMEM = R"=====(
           var tmpArray = ajaxResult.split("|");
 //Results are split as follow: Time_Alive;PumpState;PumpVolLeft;ValvePort;CurrentWeight_1;ScaleState1
             //CurrentWeight_2;ScaleState2
-            if(tmpArray.length>11){
+            if(tmpArray.length>12){
 
               var TimeAliveDay = Math.floor(tmpArray[0]/86400);
               tmpArray[0] = tmpArray[0]-86400*TimeAliveDay;
@@ -162,7 +162,7 @@ const char homePageStr[] PROGMEM = R"=====(
                 document.getElementById('rinseState').innerHTML = 'Busy';
                 document.getElementById('RinseStatus').style.border = '5px solid yellow';
               }
-             
+              document.getElementById('currentMultiplier').innerHTML = tmpArray[13];
             }
           }
         }
@@ -203,6 +203,9 @@ const char homePageStr[] PROGMEM = R"=====(
             break;
         case '/enableUVC':
           ajaxURL = ajaxURL.concat('/',document.getElementById('enableUVC').value);
+            break;
+        case '/setVolumeMultiplier':
+          ajaxURL = ajaxURL.concat('/'.document.getElementById('volumeMultiplier').value);
             break;
       }
       ajaxRequest.open('GET',ajaxURL,true);
@@ -253,7 +256,10 @@ const char homePageStr[] PROGMEM = R"=====(
        <input type="button" class="button" onclick="ajaxCommand('/setFlow')" value="Set Flow Rate">
        <input type="number" class="number" id="flowRate" name="flowRate" min="10" max="2000" value="1000"> uL/s <span style="float:right"> Actual: <span id="currentFlow"> flowRate </span> uL/s </span><br/>
        <input type="button" class="button" onclick="ajaxCommand('/dispenseVol')" value="Dispense">
-       <input type="number" class="number" id="DispenseVol" name="DispenseVol" min="0" max="100" value="0.0" step="0.1"> mL
+       <input type="number" class="number" id="DispenseVol" name="DispenseVol" min="0" max="100" value="0.0" step="0.1"> mL <br/>
+       <input type="button" class="button" onclick="ajaxCommand('/setVolumeMultiplier')" value="Set Multiplier">
+       <input type="number" class="number" id="volumeMultiplier" name="volumeMultiplier" min="0" max="2" value="1.0" step="0.01">
+       <span style="float:right"> Current multiplier: <span id="currentMultiplier"> 1 </span> </span><br/>
      </div>
      <div id='Scale1'class="manualControl">
        <h3> Scale 1 </h3><div id="ScaleStatus1" class="status"><i id="ScaleState1">Status</i></div>
