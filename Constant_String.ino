@@ -205,7 +205,7 @@ const char homePageStr[] PROGMEM = R"=====(
           ajaxURL = ajaxURL.concat('/',document.getElementById('enableUVC').value);
             break;
         case '/setVolumeMultiplier':
-          ajaxURL = ajaxURL.concat('/'.document.getElementById('volumeMultiplier').value);
+          ajaxURL = ajaxURL.concat('/',document.getElementById('volumeMultiplier').value);
             break;
       }
       ajaxRequest.open('GET',ajaxURL,true);

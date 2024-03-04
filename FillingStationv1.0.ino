@@ -108,6 +108,7 @@ int pumpState = 0;
 float pumpFlow = 1000;
 
 int fillStationState = 0;
+bool fillStationBusy = false;
 
 int rinseStationState = 0;
 bool rinseBusy = false;

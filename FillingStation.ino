@@ -18,6 +18,7 @@ void initializeFillingStation(){
 
 void primeLinesFillingStation(){
   if(fillStationState == 1){
+    fillStationBusy = true;
     flushFillingStation();
     goToPort(MEDIAPORT1);
     updateEthernetClient();
@@ -27,9 +28,9 @@ void primeLinesFillingStation(){
     updateEthernetClient();
     dispenseVolume(primeVolMedia2);
     updateEthernetClient();
-    goToPort(H2OPORT);
+    /*goToPort(H2OPORT);
     updateEthernetClient();
-    dispenseVolume(primeVolH2O);
+    dispenseVolume(primeVolH2O);*/
     updateEthernetClient();
     goToPort(ETHPORT);
     updateEthernetClient();
@@ -43,6 +44,13 @@ void primeLinesFillingStation(){
     updateEthernetClient();
     dispenseVolume(deadVolume*2);
     updateEthernetClient();
+    if(scaleActive1)
+      goToPort(MEDIAPORT1);
+    else if(scaleActive2){
+      goToPort(MEDIAPORT2);
+    }
+    dispenseVolume(deadVolume);
+    fillStationBusy = false;
   }
   else{
     PRINTLN("Filling Station is not ready");
@@ -71,14 +79,16 @@ void dispenseMediaVol(float dispenseVol){
     }
     //check that there is enough media volume
     if((dispenseVol+deadVolume) < (weightLeft-deadVolumePouch)){
+      fillStationBusy = true;
       goToPort(mediaPort);
       updateEthernetClient();
       dispenseVolume(dispenseVol);
       updateEthernetClient();
-      goToPort(4);
+      /*goToPort(4);
       dispenseVolume(deadVolume);
       flushFillingStation();
-      updateEthernetClient();
+      updateEthernetClient();*/
+      fillStationBusy = false;
       PRINTLN("Dispense Media completed");
     }
     else{
@@ -93,6 +103,7 @@ void dispenseMediaVol(float dispenseVol){
 void cleanFillingStation(){
   getFillingStationState();
   if(fillStationState == 1){
+    fillStationBusy = true;
     PRINTLN("Filling Station cleaning routine start");
     goToPort(AIRPORT);
     dispenseVolume(deadVolume*2);
@@ -102,6 +113,7 @@ void cleanFillingStation(){
     dispenseVolume(deadVolume*2);
     goToPort(AIRPORT);
     dispenseVolume(deadVolume*2);
+    fillStationBusy = false;
   }
   else{
     PRINTLN("Filling Station is not ready");
@@ -111,9 +123,11 @@ void cleanFillingStation(){
 void flushFillingStation(){
   getFillingStationState();
   if(fillStationState == 1){
+    fillStationBusy = true;
     PRINTLN("Filling Station air flush start");
     goToPort(AIRPORT);
     dispenseVolume(deadVolume*2);
+    fillStationBusy = false;
   }
   else{
     PRINTLN("Filling Station is not ready");
@@ -130,7 +144,7 @@ void getFillingStationState(){
   getScaleState2();
 
   if(valveInit && pumpInit && (scaleInit1 || scaleInit2)){
-    if(valveBusy || pumpBusy){
+    if(valveBusy || pumpBusy || fillStationBusy){
       fillStationState = 2; //fillStation is busy
     }
     else{
