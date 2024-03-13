@@ -90,6 +90,8 @@ void dispenseMediaVol(float dispenseVol){
       updateEthernetClient();*/
       fillStationBusy = false;
       PRINTLN("Dispense Media completed");
+      getFillingStationState();
+      lastDispense = weightLeft - scaleWeight1;
     }
     else{
       PRINTLN("Not enough volume available in the pouch, change pouch");
@@ -105,9 +107,9 @@ void cleanFillingStation(){
   if(fillStationState == 1){
     fillStationBusy = true;
     PRINTLN("Filling Station cleaning routine start");
-    goToPort(AIRPORT);
-    dispenseVolume(deadVolume*2);
     goToPort(ETHPORT);
+    dispenseVolume(deadVolume*2);
+    goToPort(AIRPORT);
     dispenseVolume(deadVolume*2);
     goToPort(H2OPORT);
     dispenseVolume(deadVolume*2);

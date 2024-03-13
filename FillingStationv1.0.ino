@@ -34,7 +34,7 @@ This code controls the ERV and the pump
 #define EN_ERV      28
 
 
-#define MAXFLOW 5000
+#define MAXFLOW 1200
 #define MAXDISPENSE 100
 
 //Valve used port
@@ -135,8 +135,11 @@ bool toggleLed = true;
 #define RINSE_AIRVALVE 8
 #define TIMEPUMP 5000 //ms
 #define TIMEAIR 5000 //ms
+#define TIMEUVC 30000 //ms
 
 #define LED_UVC   9
+
+double lastDispense = 0;
 void setup()
 {
   //set pins
@@ -306,6 +309,10 @@ void loop()
           if(!selectScaleAuto()){
             PRINTLN("ERROR selecting scale");
             }
+        }
+        if(currentLine == "getScaleWeight"){
+          PRINTLN("getScaleWeight");
+          answerHTTPWeight(client_pntr);
         }
         //Rinse STATION
         if(currentLine=="dispenseAir") {

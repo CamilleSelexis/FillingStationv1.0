@@ -163,6 +163,7 @@ const char homePageStr[] PROGMEM = R"=====(
                 document.getElementById('RinseStatus').style.border = '5px solid yellow';
               }
               document.getElementById('currentMultiplier').innerHTML = tmpArray[13];
+              document.getElementById('lastDispense').innerHTML = tmpArray[14];
             }
           }
         }
@@ -235,7 +236,8 @@ const char homePageStr[] PROGMEM = R"=====(
         <input type="button" class="button" onclick="ajaxCommand('/initializeFillStation')" value="Initialize Filling Station">
         <input type="button" class="button" onclick="ajaxCommand('/primeLinesFillStation')" value="Prime Filling Station"><br/>
         <input type="button" class="button" onclick="ajaxCommand('/dispenseMediaVol')" value="Dispense Media">
-        <input type="number" class="number" id="MediaVolume" name="MediaVolume" min="0" max="100" step="0.1" value="0.0"> mL <br/>
+        <input type="number" class="number" id="MediaVolume" name="MediaVolume" min="0" max="100" step="0.1" value="0.0"> mL 
+        Last Dispense: <span id="lastDispense"> lastdispense </span>g<br/>
         <input type="button" class="button" onclick="ajaxCommand('/cleanFillStation')" value="Clean Filling Station">
         <input type="button" class="button" onclick="ajaxCommand('/flushFillStation')" value="Flush with Air"> <br/>
         <input type="button" class="button" onclick="ajaxCommand('/rinseTip')" value="Rinse distribution tip">
@@ -296,4 +298,5 @@ const char homePageStr[] PROGMEM = R"=====(
    </div>
  </body>
 </html>
+
 )=====";

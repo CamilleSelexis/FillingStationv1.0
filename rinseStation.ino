@@ -33,11 +33,12 @@ void initializeRinseStation(){
 
 void rinseTip(){
   long time_rinse_start = millis();
+  long time_UVC_start = millis();
   rinse1Busy = true;
   rinse2Busy = true;
   digitalWrite(RINSE_PUMP1,HIGH);
   digitalWrite(RINSE_PUMP2,HIGH);
-  digitalWrite(LED_UVC,HIGH);
+  //digitalWrite(LED_UVC,HIGH);
   while(millis()-time_rinse_start<TIMEPUMP){
     
   }
@@ -53,6 +54,7 @@ void rinseTip(){
     
   }
   digitalWrite(RINSE_AIRVALVE,LOW);
+  while(millis()-time_UVC_start < TIMEUVC){}
   digitalWrite(LED_UVC,LOW);
   rinseAirBusy = false;
 }

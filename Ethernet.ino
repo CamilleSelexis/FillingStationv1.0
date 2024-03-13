@@ -57,6 +57,8 @@ void updateHomePage(EthernetClient* client_pntr){
   
   updateValues += String(volumeMultiplier);
   updateValues += "\r|";
+  updateValues += String(lastDispense);
+  updateValues += "\r|";
   client_pntr->print( Header );
   client_pntr->print(updateValues);
   //client_pntr->print( tagPresent[0] );   client_pntr->print( "|" );  client_pntr->print( tagPresent[1] );   client_pntr->print( "|" );  client_pntr->print( tagPresent[2] ); 
@@ -78,6 +80,27 @@ void getStatus(EthernetClient* client_pntr) {
   client_pntr->stop();
 }
 
+void answerHTTPWeight(EthernetClient* client_pntr) {
+  client_pntr->print( Header );
+  updateScalesValues();
+  if(scaleActive1||scaleActive2){
+    if(scaleActive1){
+      client_pntr->print("1|"+String(scaleWeight1));
+    }
+    else
+      client_pntr->print("2|"+String(scaleWeight2));
+  }
+  else{
+    selectScaleAuto();
+    if(scaleActive1){
+      client_pntr->print("1|"+String(scaleWeight1));
+    }
+    else
+      client_pntr->print("2|"+String(scaleWeight2));
+  }
+  while (client_pntr->read() != -1);
+  client_pntr->stop();
+}
 /*
  * Call this function to quickly connect to a client sends him a getStatus update
  */
