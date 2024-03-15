@@ -164,6 +164,8 @@ const char homePageStr[] PROGMEM = R"=====(
               }
               document.getElementById('currentMultiplier').innerHTML = tmpArray[13];
               document.getElementById('lastDispense').innerHTML = tmpArray[14];
+              document.getElementById('lastDispenseCorrected').innerHTML = tmpArray[15];
+              document.getElementById('variation').innerHTML = tmpArray[14]-tmpArray[15];
             }
           }
         }
@@ -237,7 +239,9 @@ const char homePageStr[] PROGMEM = R"=====(
         <input type="button" class="button" onclick="ajaxCommand('/primeLinesFillStation')" value="Prime Filling Station"><br/>
         <input type="button" class="button" onclick="ajaxCommand('/dispenseMediaVol')" value="Dispense Media">
         <input type="number" class="number" id="MediaVolume" name="MediaVolume" min="0" max="100" step="0.1" value="0.0"> mL 
-        Last Dispense: <span id="lastDispense"> lastdispense </span>g<br/>
+        Last Dispense: <span id="lastDispense"> lastdispense </span>g 
+        Correcetd: <span id="lastDispenseCorrected"> lastdispenseC </span>g
+         Var: <span id="variation"> variation </span>g<br/>
         <input type="button" class="button" onclick="ajaxCommand('/cleanFillStation')" value="Clean Filling Station">
         <input type="button" class="button" onclick="ajaxCommand('/flushFillStation')" value="Flush with Air"> <br/>
         <input type="button" class="button" onclick="ajaxCommand('/rinseTip')" value="Rinse distribution tip">

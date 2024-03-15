@@ -140,6 +140,8 @@ bool toggleLed = true;
 #define LED_UVC   9
 
 double lastDispense = 0;
+double lastDispenseCorrected = 0;
+double weightVar = 0;
 void setup()
 {
   //set pins
@@ -174,6 +176,7 @@ void setup()
 }
 void loop()
 {
+  
   //Get current status of the filling station
   getFillingStationState();
 

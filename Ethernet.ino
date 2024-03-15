@@ -59,6 +59,8 @@ void updateHomePage(EthernetClient* client_pntr){
   updateValues += "\r|";
   updateValues += String(lastDispense);
   updateValues += "\r|";
+  updateValues += String(lastDispenseCorrected);
+  updateValues += "\r|";
   client_pntr->print( Header );
   client_pntr->print(updateValues);
   //client_pntr->print( tagPresent[0] );   client_pntr->print( "|" );  client_pntr->print( tagPresent[1] );   client_pntr->print( "|" );  client_pntr->print( tagPresent[2] ); 

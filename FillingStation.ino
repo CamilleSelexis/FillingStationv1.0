@@ -60,6 +60,7 @@ void dispenseMediaVol(float dispenseVol){
   //Update all states
   getFillingStationState();
   double weightLeft = 0;
+  double weightStart = 0;
   int mediaPort = 0;
   if(fillStationState == 1){
     //if no scale active, select the one with the least volume
@@ -70,12 +71,17 @@ void dispenseMediaVol(float dispenseVol){
       }
     }
     if(scaleActive1){
+      //The volume dispensed depends on the pressure inside the media pouch so on its available volume
       weightLeft = scaleWeight1;
       mediaPort = MEDIAPORT1;
+      dispenseVol = dispenseVol-0.4*pow(((scaleWeight1-2800)/2200),3);
+      weightStart = scaleWeight2;
     }
     else{
       weightLeft = scaleWeight2;
       mediaPort = MEDIAPORT2;
+      dispenseVol = dispenseVol-0.4*pow(((scaleWeight2-2800)/2200),3);
+      weightStart = scaleWeight1;
     }
     //check that there is enough media volume
     if((dispenseVol+deadVolume) < (weightLeft-deadVolumePouch)){
@@ -91,7 +97,9 @@ void dispenseMediaVol(float dispenseVol){
       fillStationBusy = false;
       PRINTLN("Dispense Media completed");
       getFillingStationState();
-      lastDispense = weightLeft - scaleWeight1;
+      lastDispense = weightLeft - scaleActive1?scaleWeight1:scaleWeight2;
+      weightVar = weightStart - scaleActive1?scaleWeight2:scaleWeight1;
+      lastDispenseCorrected = lastDispense-weightVar;
     }
     else{
       PRINTLN("Not enough volume available in the pouch, change pouch");
