@@ -20,9 +20,12 @@ void primeLinesFillingStation(){
   if(fillStationState == 1){
     fillStationBusy = true;
     flushFillingStation();
+    double weightStart1 = scaleWeight1;
     goToPort(MEDIAPORT1);
     updateEthernetClient();
     dispenseVolume(primeVolMedia1);
+    getFillingStationState();
+    double weightEnd1 = weightStart1-scaleWeight1;
     updateEthernetClient();
     goToPort(MEDIAPORT2);
     updateEthernetClient();
@@ -49,7 +52,12 @@ void primeLinesFillingStation(){
     else if(scaleActive2){
       goToPort(MEDIAPORT2);
     }
+    getFillingStationState();
+    double weightStart2 = scaleWeight1;
     dispenseVolume(deadVolume);
+    getFillingStationState();
+    double weightEnd2 = weightStart2-scaleWeight1;
+    PRINTLN("Volume variation 1 = "+String(weightEnd1)+" // Volume variation 2 = "+String(weightEnd2));
     fillStationBusy = false;
   }
   else{
@@ -74,13 +82,13 @@ void dispenseMediaVol(float dispenseVol){
       //The volume dispensed depends on the pressure inside the media pouch so on its available volume
       weightLeft = scaleWeight1;
       mediaPort = MEDIAPORT1;
-      dispenseVol = dispenseVol-0.4*pow(((scaleWeight1-2800)/2200),3);
+      //dispenseVol = dispenseVol-0.4*pow(((scaleWeight1-2800)/2200),3);
       weightStart = scaleWeight2;
     }
     else{
       weightLeft = scaleWeight2;
       mediaPort = MEDIAPORT2;
-      dispenseVol = dispenseVol-0.4*pow(((scaleWeight2-2800)/2200),3);
+      //dispenseVol = dispenseVol-0.4*pow(((scaleWeight2-2800)/2200),3);
       weightStart = scaleWeight1;
     }
     //check that there is enough media volume
@@ -97,8 +105,8 @@ void dispenseMediaVol(float dispenseVol){
       fillStationBusy = false;
       PRINTLN("Dispense Media completed");
       getFillingStationState();
-      lastDispense = weightLeft - scaleActive1?scaleWeight1:scaleWeight2;
-      weightVar = weightStart - scaleActive1?scaleWeight2:scaleWeight1;
+      lastDispense = weightLeft - (scaleActive1?scaleWeight1:scaleWeight2);
+      weightVar = weightStart - (scaleActive1?scaleWeight2:scaleWeight1);
       lastDispenseCorrected = lastDispense-weightVar;
     }
     else{

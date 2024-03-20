@@ -22,45 +22,45 @@ void updateHomePage(EthernetClient* client_pntr){
 
   String updateValues = "";
   updateValues += String(millis()/1000);
-  updateValues += "\r|";
+  updateValues += "|";
   
   updateValues += String(valveState);
-  updateValues += "\r|";
+  updateValues += "|";
   updateValues += String(valvePort);
-  updateValues += "\r|";
+  updateValues += "|";
 
   updateValues += String(pumpState);
-  updateValues += "\r|";
+  updateValues += "|";
   updateValues += String(pumpFlow);
-  updateValues += "\r|";
+  updateValues += "|";
 
 
   updateValues += String(scaleState1);
-  updateValues += "\r|";
+  updateValues += "|";
   updateValues += String(scaleWeight1);
-  updateValues += "\r|";
+  updateValues += "|";
   updateValues += String(calibration_factor1);
-  updateValues += "\r|";
+  updateValues += "|";
 
   updateValues += String(scaleState2);
-  updateValues += "\r|";
+  updateValues += "|";
   updateValues += String(scaleWeight2);
-  updateValues += "\r|";
+  updateValues += "|";
   updateValues += String(calibration_factor2);
-  updateValues += "\r|";
+  updateValues += "|";
 
   updateValues += String(fillStationState);
-  updateValues += "\r|";
+  updateValues += "|";
 
   updateValues += String(rinseStationState);
-  updateValues += "\r|";
+  updateValues += "|";
   
   updateValues += String(volumeMultiplier);
-  updateValues += "\r|";
+  updateValues += "|";
   updateValues += String(lastDispense);
-  updateValues += "\r|";
+  updateValues += "|";
   updateValues += String(lastDispenseCorrected);
-  updateValues += "\r|";
+  updateValues += "|\r";
   client_pntr->print( Header );
   client_pntr->print(updateValues);
   //client_pntr->print( tagPresent[0] );   client_pntr->print( "|" );  client_pntr->print( tagPresent[1] );   client_pntr->print( "|" );  client_pntr->print( tagPresent[2] ); 

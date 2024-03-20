@@ -62,9 +62,9 @@ double volumeMultiplier = 1.0; //This parameter can be changed directly on the U
 HX711 scale1;//Scale on the Left
 HX711 scale2;//Scale on the right
 
-long calibration_factor1 = -430;
-long calibration_factor2 = -420; 
-//take a long time to get a resting value -> due to swinging of the basket ?
+long calibration_factor1 = -427;
+long calibration_factor2 = -427; 
+
 long zero1 = -163450;
 long zero2 = -143564;
 
@@ -176,7 +176,6 @@ void setup()
 }
 void loop()
 {
-  
   //Get current status of the filling station
   getFillingStationState();
 
@@ -391,7 +390,6 @@ void loop()
     }
     Serial.println("Took "+String(millis()-time_start)+" ms to poll eth");
   }
-
 }
 
 //Reset Arduino
