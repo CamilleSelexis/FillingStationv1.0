@@ -22,7 +22,7 @@ void goToPort(int portNumber){
       }
       else{
         valvePort = portNumber;
-        ElectricRotaryValve.centerOnPort();
+        //ElectricRotaryValve.centerOnPort();
         PRINTLN("Go to port success");
       }
     }

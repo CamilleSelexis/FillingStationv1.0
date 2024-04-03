@@ -51,7 +51,7 @@ float primeVolEth = 10; //mL
 
 double flow = 1; //ml/s
 double deadVolume = 10; //mL - This volume is the one used to flush/clean the tubings, corresponds to the volume between the pump and the dispenser
-double deadVolumePouch = 100;//mL - This volume is the one that cannot be retrieved from the bags
+double deadVolumePouch = 320;//g - Corresponds to the volume+weight of the empty bag that cannot be used (50mL) to be safe ?
 ERV ElectricRotaryValve(HOME_PIN,PORT_PIN,EN_ERV,DIR_ERV,STEP_ERV,MICROSTEPS);
 KamoerPump KamoerPump(EN_PUMP, DIR_PUMP, STEP_PUMP, MICROSTEPS_PUMP, flow, deadVolume);
 double volumeMultiplier = 1.0; //This parameter can be changed directly on the UI allowing the User to easily adjust the amount of volume delivered
@@ -65,8 +65,8 @@ HX711 scale2;//Scale on the right
 long calibration_factor1 = -427;
 long calibration_factor2 = -427; 
 
-long zero1 = -163450;
-long zero2 = -143564;
+long zero1 = -134500;//163450
+long zero2 = -109350;
 
 bool scaleInit1 = false;
 bool scaleActive1 = false;

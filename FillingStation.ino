@@ -17,6 +17,7 @@ void initializeFillingStation(){
 }
 
 void primeLinesFillingStation(){
+  volumeMultiplier = 1.0;
   if(fillStationState == 1){
     fillStationBusy = true;
     flushFillingStation();
@@ -58,6 +59,8 @@ void primeLinesFillingStation(){
     getFillingStationState();
     double weightEnd2 = weightStart2-scaleWeight1;
     PRINTLN("Volume variation 1 = "+String(weightEnd1)+" // Volume variation 2 = "+String(weightEnd2));
+    //volumeMultiplier = 1/((weightEnd1/deadVolume+weightEnd2/deadVolume)/2);
+    PRINTLN("volume multiplier should be set to "+String(volumeMultiplier));
     fillStationBusy = false;
   }
   else{
@@ -96,12 +99,20 @@ void dispenseMediaVol(float dispenseVol){
       fillStationBusy = true;
       goToPort(mediaPort);
       updateEthernetClient();
-      dispenseVolume(dispenseVol);
-      updateEthernetClient();
-      /*goToPort(4);
-      dispenseVolume(deadVolume);
-      flushFillingStation();
-      updateEthernetClient();*/
+      if(dispenseVol > 2){
+        dispenseVolume(dispenseVol*0.75);
+        updateEthernetClient();
+        getFillingStationState();
+        lastDispense = weightLeft - (scaleActive1?scaleWeight1:scaleWeight2);
+        weightVar = weightStart - (scaleActive1?scaleWeight2:scaleWeight1);
+        lastDispenseCorrected = lastDispense-weightVar;
+        double dispense2  = dispenseVol*0.25 + (dispenseVol*0.75-lastDispenseCorrected);
+        dispenseVolume(dispense2);
+      }
+      else{
+        dispenseVolume(dispenseVol);
+      }
+     
       fillStationBusy = false;
       PRINTLN("Dispense Media completed");
       getFillingStationState();
