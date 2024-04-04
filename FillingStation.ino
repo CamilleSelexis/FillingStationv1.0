@@ -17,8 +17,10 @@ void initializeFillingStation(){
 }
 
 void primeLinesFillingStation(){
-  volumeMultiplier = 1.0;
   if(fillStationState == 1){
+    volumeMultiplier = 1.0;
+    //Set pump flow rate to 500uL/s to avoid leakage on the tips
+    setFlowRate(500);
     fillStationBusy = true;
     flushFillingStation();
     double weightStart1 = scaleWeight1;
@@ -61,6 +63,7 @@ void primeLinesFillingStation(){
     PRINTLN("Volume variation 1 = "+String(weightEnd1)+" // Volume variation 2 = "+String(weightEnd2));
     //volumeMultiplier = 1/((weightEnd1/deadVolume+weightEnd2/deadVolume)/2);
     PRINTLN("volume multiplier should be set to "+String(volumeMultiplier));
+    setFlowRate(pumpFlow);
     fillStationBusy = false;
   }
   else{
@@ -119,6 +122,7 @@ void dispenseMediaVol(float dispenseVol){
       lastDispense = weightLeft - (scaleActive1?scaleWeight1:scaleWeight2);
       weightVar = weightStart - (scaleActive1?scaleWeight2:scaleWeight1);
       lastDispenseCorrected = lastDispense-weightVar;
+      dispenseVolume(-0.15); //aspirate the droplet
     }
     else{
       PRINTLN("Not enough volume available in the pouch, change pouch");

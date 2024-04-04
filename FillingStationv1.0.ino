@@ -125,19 +125,24 @@ float dispenseAirTime = 10000;
 float dispenseClean1Time = 10000;
 float dispenseClean2Time = 10000;
 float UVCLedONTime = 10000;
-float flowClean1 = 1000; //mL/ms
-float flowClean2 = 1000; //mL/ms
+float flowClean1 = 3.7; //mL/s
+float flowClean2 = 3.7; //mL/s
 
 bool UVCOn = false;
 bool toggleLed = true;
-#define RINSE_PUMP1 6
+
+#define RINSE_PUMP1 8
 #define RINSE_PUMP2 7
-#define RINSE_AIRVALVE 8
-#define TIMEPUMP 5000 //ms
+#define RINSE_AIRVALVE 6
+#define LED_UVC   9
+
+#define TIMEPUMP 10000 //ms * 4mL/s = 50mL
 #define TIMEAIR 5000 //ms
+#define TIMEDRIPPING 25000 //ms
 #define TIMEUVC 30000 //ms
 
-#define LED_UVC   9
+#define DISPENSECLEANMIN 0 //ms min time of dispense
+#define DISPENSECLEANMAX 15000 //ms max time for dispense
 
 double lastDispense = 0;
 double lastDispenseCorrected = 0;

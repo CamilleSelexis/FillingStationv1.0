@@ -35,24 +35,35 @@ void rinseTip(){
   long time_rinse_start = millis();
   long time_UVC_start = millis();
   rinse1Busy = true;
-  rinse2Busy = true;
+  //rinse2Busy = true;
   digitalWrite(RINSE_PUMP1,HIGH);
-  digitalWrite(RINSE_PUMP2,HIGH);
+  
   //digitalWrite(LED_UVC,HIGH);
   while(millis()-time_rinse_start<TIMEPUMP){
     
   }
   digitalWrite(RINSE_PUMP1,LOW);
+  delay(25000); //wait for 42s
+  time_rinse_start = millis();
+  digitalWrite(RINSE_PUMP2,HIGH);
+    while(millis()-time_rinse_start<TIMEPUMP){
+    
+  }
   digitalWrite(RINSE_PUMP2,LOW);
+  delay(25000); //wait for 42s
   rinse1Busy = false;
   rinse2Busy = false;
   delay(100);
-  time_rinse_start = millis();
   rinseAirBusy = true;
-  digitalWrite(RINSE_AIRVALVE,HIGH);
-  while(millis()-time_rinse_start<TIMEAIR){
-    
+  for(int i=0;i<5;i++){
+    digitalWrite(RINSE_AIRVALVE,HIGH);
+    delay(300);
+    digitalWrite(RINSE_AIRVALVE,LOW);
+    delay(4000);
   }
+  time_rinse_start = millis();
+  digitalWrite(RINSE_AIRVALVE,HIGH);
+  delay(TIMEAIR);
   digitalWrite(RINSE_AIRVALVE,LOW);
   while(millis()-time_UVC_start < TIMEUVC){}
   digitalWrite(LED_UVC,LOW);
@@ -61,16 +72,20 @@ void rinseTip(){
 
 void dispenseClean1(float volume){
   rinse1Busy = true;
+  dispenseClean1Time = volume*1000 / flowClean1;
+  if(dispenseClean1Time < DISPENSECLEANMIN || dispenseClean1Time > DISPENSECLEANMAX)
+    return;
   digitalWrite(RINSE_PUMP1,HIGH);
-  dispenseClean1Time = volume * flowClean1;
   //Start Timer
   timeRinseStart1 = millis();
 }
 
 void dispenseClean2(float volume){
   rinse2Busy = true;
+  dispenseClean2Time = volume*1000 / flowClean2;
+  if(dispenseClean2Time < DISPENSECLEANMIN || dispenseClean2Time > DISPENSECLEANMAX)
+    return;
   digitalWrite(RINSE_PUMP2,HIGH);
-  dispenseClean2Time = volume * flowClean2;
   //Start Timer
   timeRinseStart2 = millis();
 }
